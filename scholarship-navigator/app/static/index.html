@@ -1,0 +1,864 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Scholarship Navigator</title>
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
+    <style>
+        :root {
+            --bg-color: #0b0f19;
+            --card-bg: rgba(22, 28, 45, 0.45);
+            --border-color: rgba(255, 255, 255, 0.08);
+            --primary-glow: rgba(99, 102, 241, 0.15);
+            --primary: #6366f1;
+            --primary-hover: #4f46e5;
+            --accent: #a855f7;
+            --success: #10b981;
+            --warning: #f59e0b;
+            --error: #ef4444;
+            --text-main: #f3f4f6;
+            --text-muted: #9ca3af;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            background-color: var(--bg-color);
+            background-image: 
+                radial-gradient(at 0% 0%, rgba(99, 102, 241, 0.12) 0px, transparent 50%),
+                radial-gradient(at 100% 100%, rgba(168, 85, 247, 0.1) 0px, transparent 50%);
+            color: var(--text-main);
+            min-height: 100vh;
+            overflow-x: hidden;
+            display: flex;
+            flex-direction: column;
+        }
+
+        h1, h2, h3, h4 {
+            font-family: 'Outfit', sans-serif;
+            font-weight: 700;
+        }
+
+        header {
+            border-bottom: 1px solid var(--border-color);
+            padding: 1.25rem 2rem;
+            backdrop-filter: blur(12px);
+            background-color: rgba(11, 15, 25, 0.6);
+            position: sticky;
+            top: 0;
+            z-index: 10;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .logo-container {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+
+        .logo-icon {
+            font-size: 1.75rem;
+            background: linear-gradient(135deg, var(--primary), var(--accent));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .logo-text {
+            font-size: 1.35rem;
+            background: linear-gradient(to right, #ffffff, #d8b4fe);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .badge {
+            background-color: rgba(99, 102, 241, 0.15);
+            border: 1px solid rgba(99, 102, 241, 0.3);
+            color: #818cf8;
+            padding: 0.25rem 0.75rem;
+            border-radius: 9999px;
+            font-size: 0.75rem;
+            font-weight: 600;
+        }
+
+        main {
+            flex: 1;
+            max-width: 1400px;
+            width: 100%;
+            margin: 2rem auto;
+            padding: 0 2rem;
+            display: grid;
+            grid-template-columns: 420px 1fr;
+            gap: 2rem;
+        }
+
+        @media (max-width: 1024px) {
+            main {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .glass-panel {
+            background: var(--card-bg);
+            backdrop-filter: blur(16px);
+            border: 1px solid var(--border-color);
+            border-radius: 20px;
+            padding: 2rem;
+            box-shadow: 0 10px 30px -10px rgba(0, 0, 0, 0.3);
+            transition: transform 0.3s ease, border-color 0.3s ease;
+        }
+
+        .glass-panel:hover {
+            border-color: rgba(99, 102, 241, 0.2);
+        }
+
+        .form-section-title {
+            font-size: 1.25rem;
+            margin-bottom: 1.5rem;
+            color: #ffffff;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .form-group {
+            margin-bottom: 1.25rem;
+        }
+
+        .form-group label {
+            display: block;
+            font-size: 0.85rem;
+            color: var(--text-muted);
+            margin-bottom: 0.5rem;
+            font-weight: 500;
+        }
+
+        .form-control {
+            width: 100%;
+            background-color: rgba(15, 23, 42, 0.6);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
+            padding: 0.75rem 1rem;
+            color: var(--text-main);
+            font-family: inherit;
+            font-size: 0.95rem;
+            transition: all 0.2s ease;
+        }
+
+        .form-control:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.25);
+        }
+
+        select.form-control {
+            appearance: none;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%239ca3af'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'/%3E%3C/svg%3E");
+            background-repeat: no-repeat;
+            background-position: right 1rem center;
+            background-size: 1.25rem;
+            padding-right: 2.5rem;
+        }
+
+        textarea.form-control {
+            resize: vertical;
+            min-height: 80px;
+        }
+
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            width: 100%;
+            background: linear-gradient(135deg, var(--primary), var(--accent));
+            color: #ffffff;
+            border: none;
+            border-radius: 10px;
+            padding: 0.85rem;
+            font-size: 0.95rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px -3px rgba(99, 102, 241, 0.4);
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px -3px rgba(99, 102, 241, 0.6);
+        }
+
+        .btn:active {
+            transform: translateY(0);
+        }
+
+        .btn-secondary {
+            background: rgba(255, 255, 255, 0.08);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            color: var(--text-main);
+            box-shadow: none;
+        }
+
+        .btn-secondary:hover {
+            background: rgba(255, 255, 255, 0.12);
+            box-shadow: none;
+        }
+
+        /* Right Panel Output Styles */
+        .output-container {
+            display: flex;
+            flex-direction: column;
+            gap: 1.5rem;
+        }
+
+        /* Flow Visualizer */
+        .flow-visualizer {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: rgba(15, 23, 42, 0.4);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 1rem 2rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .flow-step {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 0.5rem;
+            opacity: 0.35;
+            transition: all 0.3s ease;
+        }
+
+        .flow-step.active {
+            opacity: 1;
+        }
+
+        .flow-step.completed {
+            opacity: 0.8;
+        }
+
+        .flow-step.completed .step-dot {
+            background-color: var(--success);
+            box-shadow: 0 0 10px var(--success);
+        }
+
+        .flow-step.active .step-dot {
+            background-color: var(--primary);
+            box-shadow: 0 0 15px var(--primary);
+            animation: pulse 1.5s infinite alternate;
+        }
+
+        .step-dot {
+            width: 14px;
+            height: 14px;
+            border-radius: 50%;
+            background-color: var(--text-muted);
+            border: 2px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .step-label {
+            font-size: 0.7rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        .flow-arrow {
+            flex: 1;
+            height: 1px;
+            background-color: rgba(255, 255, 255, 0.1);
+            margin: 0 1rem;
+            position: relative;
+        }
+
+        .flow-arrow.active {
+            background: linear-gradient(to right, var(--primary), var(--accent));
+        }
+
+        @keyframes pulse {
+            0% { transform: scale(1); opacity: 0.8; }
+            100% { transform: scale(1.3); opacity: 1; }
+        }
+
+        /* Results Screen */
+        .results-box {
+            min-height: 400px;
+            background-color: rgba(15, 23, 42, 0.3);
+            border: 1px dashed rgba(255, 255, 255, 0.1);
+            border-radius: 15px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            padding: 3rem;
+        }
+
+        .placeholder-text {
+            color: var(--text-muted);
+            max-width: 320px;
+        }
+
+        .placeholder-icon {
+            font-size: 3rem;
+            margin-bottom: 1rem;
+            background: linear-gradient(135deg, var(--primary), var(--accent));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        /* Report Layout */
+        .report-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid var(--border-color);
+            padding-bottom: 1rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .report-title {
+            font-size: 1.5rem;
+            color: #ffffff;
+        }
+
+        .report-actions {
+            display: flex;
+            gap: 0.75rem;
+        }
+
+        .action-btn {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid var(--border-color);
+            color: var(--text-main);
+            padding: 0.5rem 1rem;
+            border-radius: 8px;
+            font-size: 0.85rem;
+            font-weight: 500;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            transition: all 0.2s ease;
+        }
+
+        .action-btn:hover {
+            background: rgba(255, 255, 255, 0.1);
+            border-color: rgba(255, 255, 255, 0.2);
+        }
+
+        /* Markdown elements formatting */
+        .markdown-body {
+            line-height: 1.6;
+        }
+
+        .markdown-body h3 {
+            font-size: 1.2rem;
+            margin-top: 1.5rem;
+            margin-bottom: 0.75rem;
+            color: #fff;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+            padding-bottom: 0.25rem;
+        }
+
+        .markdown-body p {
+            margin-bottom: 1rem;
+            color: #d1d5db;
+        }
+
+        .markdown-body ul {
+            margin-bottom: 1rem;
+            padding-left: 1.5rem;
+        }
+
+        .markdown-body li {
+            margin-bottom: 0.5rem;
+            color: #d1d5db;
+        }
+
+        .markdown-body strong {
+            color: #fff;
+            font-weight: 600;
+        }
+
+        /* Alert Box */
+        .alert-box {
+            background: rgba(239, 68, 68, 0.08);
+            border: 1px solid rgba(239, 68, 68, 0.2);
+            color: #fca5a5;
+            padding: 1rem;
+            border-radius: 10px;
+            margin-bottom: 1rem;
+            display: flex;
+            align-items: flex-start;
+            gap: 0.75rem;
+        }
+
+        .alert-icon {
+            font-size: 1.25rem;
+            color: var(--error);
+        }
+
+        /* Confirmation Dialog Modal */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(7, 10, 18, 0.85);
+            backdrop-filter: blur(8px);
+            z-index: 100;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.3s ease;
+        }
+
+        .modal-overlay.open {
+            opacity: 1;
+            pointer-events: auto;
+        }
+
+        .modal-content {
+            background: #111827;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+            border-radius: 20px;
+            width: 100%;
+            max-width: 500px;
+            padding: 2rem;
+            transform: scale(0.9);
+            transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+
+        .modal-overlay.open .modal-content {
+            transform: scale(1);
+        }
+
+        .modal-header {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            margin-bottom: 1rem;
+        }
+
+        .modal-header-icon {
+            font-size: 1.5rem;
+            color: var(--primary);
+        }
+
+        .modal-header-title {
+            font-size: 1.25rem;
+            font-weight: 600;
+        }
+
+        .modal-body {
+            color: var(--text-muted);
+            font-size: 0.95rem;
+            line-height: 1.5;
+            margin-bottom: 1.5rem;
+            background: rgba(255, 255, 255, 0.02);
+            border: 1px solid var(--border-color);
+            padding: 1rem;
+            border-radius: 8px;
+        }
+
+        .modal-actions {
+            display: flex;
+            gap: 1rem;
+        }
+
+        /* Loading Spinner */
+        .spinner {
+            width: 20px;
+            height: 20px;
+            border: 3px solid rgba(255, 255, 255, 0.3);
+            border-radius: 50%;
+            border-top-color: #ffffff;
+            animation: spin 0.8s linear infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+
+    <header>
+        <div class="logo-container">
+            <span class="logo-icon">🎓</span>
+            <h1 class="logo-text">Scholarship Navigator</h1>
+            <span class="badge">Multi-Agent AI</span>
+        </div>
+    </header>
+
+    <main>
+        <!-- Left Column: User Input Form -->
+        <section class="glass-panel">
+            <h2 class="form-section-title">👤 Student Profile</h2>
+            <form id="profileForm">
+                <div class="form-group">
+                    <label for="studentName">Student Name</label>
+                    <input type="text" id="studentName" class="form-control" placeholder="e.g. Bhaskar" required>
+                </div>
+                
+                <div class="form-group">
+                    <label for="degree">Degree Level</label>
+                    <select id="degree" class="form-control" required>
+                        <option value="Undergraduate">Undergraduate</option>
+                        <option value="Graduate">Graduate</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label for="branch">Academic Major / Branch</label>
+                    <input type="text" id="branch" class="form-control" placeholder="e.g. Computer Science" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="gpa">Cumulative GPA</label>
+                    <input type="number" id="gpa" class="form-control" step="0.01" min="0.0" max="4.0" placeholder="e.g. 3.80" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="familyIncome">Annual Family Income ($)</label>
+                    <input type="number" id="familyIncome" class="form-control" placeholder="e.g. 45000" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="interests">Interests & Specializations (Optional)</label>
+                    <textarea id="interests" class="form-control" placeholder="e.g. AI research, Open Source coding"></textarea>
+                </div>
+
+                <div class="form-group">
+                    <label for="careerGoals">Career Goals (Optional)</label>
+                    <textarea id="careerGoals" class="form-control" placeholder="e.g. Graduate studies, Software Engineer"></textarea>
+                </div>
+
+                <button type="submit" id="submitBtn" class="btn">
+                    <span>🔍 Find Scholarships</span>
+                </button>
+            </form>
+        </section>
+
+        <!-- Right Column: Visualizer & Output Results -->
+        <section class="glass-panel output-container">
+            <!-- Flow steps visualizer -->
+            <div class="flow-visualizer">
+                <div class="flow-step" id="step-security">
+                    <div class="step-dot"></div>
+                    <span class="step-label">Security</span>
+                </div>
+                <div class="flow-arrow" id="arrow-1"></div>
+                <div class="flow-step" id="step-search">
+                    <div class="step-dot"></div>
+                    <span class="step-label">Search</span>
+                </div>
+                <div class="flow-arrow" id="arrow-2"></div>
+                <div class="flow-step" id="step-checklist">
+                    <div class="step-dot"></div>
+                    <span class="step-label">Checklist</span>
+                </div>
+                <div class="flow-arrow" id="arrow-3"></div>
+                <div class="flow-step" id="step-verify">
+                    <div class="step-dot"></div>
+                    <span class="step-label">Verify</span>
+                </div>
+            </div>
+
+            <!-- Main output result -->
+            <div id="outputArea" class="results-box">
+                <div class="placeholder-content">
+                    <div class="placeholder-icon">🎓</div>
+                    <h3 style="margin-bottom: 0.5rem;">Ready to Match</h3>
+                    <p class="placeholder-text">Fill in your student profile details on the left and start the AI workflow matching.</p>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <!-- HITL Modal Dialog -->
+    <div class="modal-overlay" id="verifyModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <span class="modal-header-icon">✋</span>
+                <h3 class="modal-header-title">Human Verification Required</h3>
+            </div>
+            <div class="modal-body" id="modalVerifyText">
+                Please confirm that the student details extracted are correct.
+            </div>
+            <div class="modal-actions">
+                <button id="modalConfirmBtn" class="btn">Confirm (Yes)</button>
+                <button id="modalReviseBtn" class="btn btn-secondary">Make Changes</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let currentSessionId = null;
+
+        // Element Selectors
+        const profileForm = document.getElementById('profileForm');
+        const submitBtn = document.getElementById('submitBtn');
+        const outputArea = document.getElementById('outputArea');
+        const verifyModal = document.getElementById('verifyModal');
+        const modalVerifyText = document.getElementById('modalVerifyText');
+        const modalConfirmBtn = document.getElementById('modalConfirmBtn');
+        const modalReviseBtn = document.getElementById('modalReviseBtn');
+
+        // Step visualizer elements
+        const steps = {
+            security: document.getElementById('step-security'),
+            search: document.getElementById('step-search'),
+            checklist: document.getElementById('step-checklist'),
+            verify: document.getElementById('step-verify'),
+        };
+        const arrows = {
+            arrow1: document.getElementById('arrow-1'),
+            arrow2: document.getElementById('arrow-2'),
+            arrow3: document.getElementById('arrow-3'),
+        };
+
+        function resetVisualizer() {
+            Object.values(steps).forEach(s => s.className = 'flow-step');
+            Object.values(arrows).forEach(a => a.className = 'flow-arrow');
+        }
+
+        function setStepState(stepKey, state) {
+            steps[stepKey].className = `flow-step ${state}`;
+        }
+
+        // Form Submit Handler
+        profileForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            resetVisualizer();
+            
+            // Set security step active
+            setStepState('security', 'active');
+            
+            // Disable button, show loader
+            submitBtn.disabled = true;
+            submitBtn.innerHTML = '<div class="spinner"></div><span>Scanning profile...</span>';
+            
+            outputArea.className = 'results-box';
+            outputArea.innerHTML = `
+                <div class="placeholder-content">
+                    <div class="spinner" style="margin: 0 auto 1.5rem; width: 40px; height: 40px;"></div>
+                    <h3>Running Multi-Agent Workflow...</h3>
+                    <p class="placeholder-text">Sub-agents are matching records and validating eligibility checkpoints.</p>
+                </div>
+            `;
+
+            // Prepare Payload
+            const profile = {
+                name: document.getElementById('studentName').value,
+                degree: document.getElementById('degree').value,
+                branch: document.getElementById('branch').value,
+                gpa: parseFloat(document.getElementById('gpa').value),
+                family_income: parseFloat(document.getElementById('familyIncome').value),
+                interests: document.getElementById('interests').value,
+                career_goal: document.getElementById('careerGoals').value
+            };
+
+            // Call API
+            try {
+                // Simulate step progress slightly for visual polish
+                setTimeout(() => {
+                    setStepState('security', 'completed');
+                    arrows.arrow1.className = 'flow-arrow active';
+                    setStepState('search', 'active');
+                }, 800);
+
+                setTimeout(() => {
+                    setStepState('search', 'completed');
+                    arrows.arrow2.className = 'flow-arrow active';
+                    setStepState('checklist', 'active');
+                }, 1600);
+
+                const response = await fetch('/api/scholarship/match', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(profile)
+                });
+
+                const data = await response.json();
+                
+                if (response.ok) {
+                    currentSessionId = data.session_id;
+                    
+                    // Transition checklist step to verify
+                    setStepState('checklist', 'completed');
+                    arrows.arrow3.className = 'flow-arrow active';
+                    setStepState('verify', 'active');
+
+                    // Check if a verification warning or prompt occurred
+                    const responseText = data.response;
+                    
+                    if (responseText.includes("Your request was flagged") || responseText.includes("security checkpoint")) {
+                        // Flagged by security checkpoint
+                        resetVisualizer();
+                        outputArea.className = 'glass-panel';
+                        outputArea.innerHTML = `
+                            <div class="alert-box">
+                                <span class="alert-icon">⚠️</span>
+                                <div>
+                                    <h3 style="margin-bottom: 0.25rem;">Security Exception Raised</h3>
+                                    <p>${responseText}</p>
+                                </div>
+                            </div>
+                        `;
+                        resetSubmitBtn();
+                    } else if (data.state.pending_profile_confirmation) {
+                        // Trigger the human confirmation dialog modal
+                        modalVerifyText.innerText = `Extracting Match Context:\n\nName: ${profile.name}\nGPA: ${profile.gpa}\nIncome: $${profile.family_income}\n\nPlease confirm these details to compile the final checklist document.`;
+                        verifyModal.classList.add('open');
+                    } else {
+                        // Directly show final text if no confirmation needed
+                        renderMarkdown(responseText);
+                        setStepState('verify', 'completed');
+                        resetSubmitBtn();
+                    }
+                } else {
+                    throw new Error(data.message || 'API request failed.');
+                }
+            } catch (err) {
+                resetVisualizer();
+                outputArea.className = 'results-box';
+                outputArea.innerHTML = `
+                    <div class="placeholder-content" style="color: var(--error);">
+                        <div style="font-size: 3rem; margin-bottom: 1rem;">⚠️</div>
+                        <h3>Connection Failed</h3>
+                        <p class="placeholder-text">${err.message}</p>
+                    </div>
+                `;
+                resetSubmitBtn();
+            }
+        });
+
+        function resetSubmitBtn() {
+            submitBtn.disabled = false;
+            submitBtn.innerHTML = '<span>🔍 Find Scholarships</span>';
+        }
+
+        // Modal Action: Confirm
+        modalConfirmBtn.addEventListener('click', async () => {
+            verifyModal.classList.remove('open');
+            
+            outputArea.innerHTML = `
+                <div class="placeholder-content">
+                    <div class="spinner" style="margin: 0 auto 1.5rem; width: 40px; height: 40px;"></div>
+                    <h3>Generating Final PDF/Markdown Report...</h3>
+                    <p class="placeholder-text">Consolidating document requirements and timeline metrics.</p>
+                </div>
+            `;
+
+            try {
+                const response = await fetch('/api/scholarship/confirm', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        session_id: currentSessionId,
+                        confirm_msg: 'yes'
+                    })
+                });
+
+                const data = await response.json();
+                if (response.ok) {
+                    setStepState('verify', 'completed');
+                    renderMarkdown(data.response);
+                } else {
+                    throw new Error('Confirmation failed.');
+                }
+            } catch (err) {
+                outputArea.innerHTML = `<p style="color: var(--error);">${err.message}</p>`;
+            } finally {
+                resetSubmitBtn();
+            }
+        });
+
+        // Modal Action: Revise
+        modalReviseBtn.addEventListener('click', () => {
+            verifyModal.classList.remove('open');
+            resetVisualizer();
+            outputArea.className = 'results-box';
+            outputArea.innerHTML = `
+                <div class="placeholder-content">
+                    <div class="placeholder-icon">✏️</div>
+                    <h3>Revision Requested</h3>
+                    <p class="placeholder-text">Modify your inputs on the left side form and click search to run again.</p>
+                </div>
+            `;
+            resetSubmitBtn();
+        });
+
+        // Basic Markdown to HTML Renderer helper
+        function renderMarkdown(md) {
+            outputArea.className = 'glass-panel markdown-body';
+            
+            // Replace headings
+            let html = md.replace(/^### (.*$)/gim, '<h3>$1</h3>');
+            html = html.replace(/^## (.*$)/gim, '<h2>$1</h2>');
+            
+            // Replace bold text
+            html = html.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+            
+            // Replace bullets
+            html = html.replace(/^\s*-\s*(.*$)/gim, '<li>$1</li>');
+            html = html.replace(/^\s*\*\s*(.*$)/gim, '<li>$1</li>');
+            
+            // Wrap loose list items in actual ul tags
+            html = html.split('\n').map(line => {
+                if (line.trim().startsWith('<li>')) return line;
+                if (line.trim() === '') return '';
+                if (line.startsWith('<h3>') || line.startsWith('<h2>')) return line;
+                return `<p>${line}</p>`;
+            }).join('\n');
+            
+            // Cleanup list structures
+            html = html.replace(/(<li>.*<\/li>)/gs, '<ul>$1<\/ul>');
+
+            const formattedReport = `
+                <div class="report-header">
+                    <h2 class="report-title">🏆 Recommendations Report</h2>
+                    <div class="report-actions">
+                        <button class="action-btn" onclick="downloadReport()"><span style="font-size: 1rem;">⬇️</span> Download Report</button>
+                    </div>
+                </div>
+                <div class="report-content">${html}</div>
+            `;
+
+            outputArea.innerHTML = formattedReport;
+        }
+
+        // Download Report Helper
+        window.downloadReport = function() {
+            const reportContent = outputArea.innerText;
+            const blob = new Blob([reportContent], { type: 'text/markdown;charset=utf-8;' });
+            const url = URL.createObjectURL(blob);
+            const link = document.createElement("a");
+            link.setAttribute("href", url);
+            link.setAttribute("download", "scholarship_report.md");
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        };
+    </script>
+</body>
+</html>
