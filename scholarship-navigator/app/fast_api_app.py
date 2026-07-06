@@ -19,10 +19,14 @@ from collections.abc import AsyncIterator
 import google.auth
 from a2a.server.tasks import InMemoryTaskStore
 from dotenv import load_dotenv
-from fastapi import FastAPI, Request
+from fastapi import FastAPI
 from google.adk.cli.fast_api import get_fast_api_app
 from google.adk.runners import Runner
 from google.cloud import logging as google_cloud_logging
+
+from app.routes.auth_routes import router as auth_router
+from app.routes.scholarship_routes import router as scholarship_router
+from app.routes.chat_routes import router as chat_router
 
 from app.app_utils import services
 from app.app_utils.a2a import attach_a2a_routes
@@ -37,32 +41,23 @@ from app.app_utils.typing import Feedback
 
 load_dotenv()
 setup_telemetry()
+import logging as std_logging
+
 # Must run before get_fast_api_app to set the tracer provider resource.
 setup_agent_engine_telemetry()
-# Setup logging client (fallback to python native logger if GCP credentials are not present)
-gcp_logging_enabled = False
-try:
-    if os.getenv("GOOGLE_GENAI_USE_VERTEXAI", "false").lower() in ("true", "1"):
-        _, project_id = google.auth.default()
-        logging_client = google_cloud_logging.Client()
-        logger = logging_client.logger(__name__)
-        gcp_logging_enabled = True
-except Exception as e:
-    import logging as local_logging
-    local_logging.warning(f"Could not connect to Google Cloud Logging: {e}. Using local console fallback.")
 
-if not gcp_logging_enabled:
-    import logging as local_logging
-    class LocalFallbackLogger:
-        def log_struct(self, data, severity="INFO"):
-            local_logging.info(f"[{severity}] Struct Log: {data}")
-        def info(self, msg):
-            local_logging.info(msg)
-        def warning(self, msg):
-            local_logging.warning(msg)
-        def error(self, msg):
-            local_logging.error(msg)
-    logger = LocalFallbackLogger()
+try:
+    _, project_id = google.auth.default()
+    logging_client = google_cloud_logging.Client()
+    logger = logging_client.logger(__name__)
+except Exception as e:
+    project_id = None
+    logger = std_logging.getLogger(__name__)
+    if not hasattr(logger, "log_struct"):
+        def log_struct(info_dict, severity="INFO"):
+            logger.info(f"[{severity}] {info_dict}")
+        logger.log_struct = log_struct
+    std_logging.warning(f"Google Cloud credentials not found. Falling back to standard logger: {e}")
 
 allow_origins = (
     os.getenv("ALLOW_ORIGINS", "").split(",") if os.getenv("ALLOW_ORIGINS") else None
@@ -95,14 +90,6 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
         task_store=InMemoryTaskStore(),
         rpc_path=f"/a2a/{adk_app.name}",
     )
-    # Initialize and seed MongoDB Atlas database
-    from app.database.connection import init_db
-    from app.services.db_services import seed_default_scholarships
-    try:
-        init_db()
-        seed_default_scholarships()
-    except Exception as e:
-        logger.error(f"Error initializing MongoDB Atlas database: {e}")
     yield
 
 
@@ -115,167 +102,29 @@ app: FastAPI = get_fast_api_app(
     otel_to_cloud=False,
     lifespan=lifespan,
 )
-app.title = "scholarship-navigator"
-app.description = "API for interacting with the Agent scholarship-navigator"
-
-# Enable CORS for frontend integration
-from fastapi.middleware.cors import CORSMiddleware
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["*"],
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
+app.title = "scholar-navigator"
+app.description = "API for interacting with the Agent scholar-navigator"
+app.include_router(auth_router)
+app.include_router(scholarship_router)
+app.include_router(chat_router)
 
 # Proxy routes so the Vertex AI Console Playground (reasoning_engine SDK) can
 # talk to this agent alongside the native adk_api routes.
 attach_reasoning_engine_routes(app)
 
-# Include MongoDB Atlas CRUD routing
-from app.routes.scholarship_routes import router as mongodb_router
-app.include_router(mongodb_router)
-
-# Include Authentication routing
-from app.routes.auth_routes import router as auth_router
-app.include_router(auth_router)
-
 
 @app.post("/feedback")
 def collect_feedback(feedback: Feedback) -> dict[str, str]:
-    """Collect and log feedback."""
+    """Collect and log feedback.
+
+    Args:
+        feedback: The feedback data to log
+
+    Returns:
+        Success message
+    """
     logger.log_struct(feedback.model_dump(), severity="INFO")
     return {"status": "success"}
-
-
-# -----------------------------------------------------------------------------
-# Custom Frontend API and HTML Delivery Routes
-# -----------------------------------------------------------------------------
-from fastapi.responses import HTMLResponse, JSONResponse
-from google.genai import types
-import json
-
-@app.get("/", response_class=HTMLResponse)
-async def serve_index():
-    static_file_path = os.path.join(os.path.dirname(__file__), "static", "index.html")
-    if os.path.exists(static_file_path):
-        with open(static_file_path, "r", encoding="utf-8") as f:
-            return f.read()
-    return "<h1>Scholarship Navigator Frontend Not Found</h1>"
-
-
-@app.post("/api/scholarship/match")
-async def match_scholarship_api(profile: dict, request: Request):
-    """API endpoint to initialize session, save profile, and trigger agent workflow."""
-    runner = request.app.state.runner
-    user_id = "web_user"
-    
-    # Create a fresh agent session
-    session = await runner.session_service.create_session(
-        user_id=user_id, 
-        app_name=request.app.state.agent_app_name
-    )
-    
-    # Pre-populate state with the profile so the functions have it
-    session.state["student_profile"] = profile
-    await runner.session_service.update_session(session)
-    
-    # Trigger matching query to orchestrator
-    message = types.Content(
-        role="user",
-        parts=[types.Part.from_text(
-            text=f"Please match scholarships for {profile.get('name')}. "
-                 f"Profile: Degree={profile.get('degree')}, Branch={profile.get('branch')}, "
-                 f"GPA={profile.get('gpa')}, Income={profile.get('family_income')}."
-        )]
-    )
-    
-    response_text = ""
-    async for event in runner.run(
-        new_message=message,
-        user_id=user_id,
-        session_id=session.id,
-    ):
-        if event.content and event.content.parts:
-            response_text += "".join(part.text for part in event.content.parts if part.text)
-            
-    # Retrieve updated state
-    updated_session = await runner.session_service.get_session(session.id)
-    
-    return JSONResponse({
-        "session_id": session.id,
-        "response": response_text,
-        "state": updated_session.state
-    })
-
-
-@app.post("/api/scholarship/confirm")
-async def confirm_scholarship_api(data: dict, request: Request):
-    """API endpoint to confirm profile details and resume the workflow to get the final report."""
-    runner = request.app.state.runner
-    session_id = data.get("session_id")
-    confirm_msg = data.get("confirm_msg", "yes")
-    user_id = "web_user"
-    
-    message = types.Content(
-        role="user",
-        parts=[types.Part.from_text(text=confirm_msg)]
-    )
-    
-    response_text = ""
-    async for event in runner.run(
-        new_message=message,
-        user_id=user_id,
-        session_id=session_id,
-    ):
-        if event.content and event.content.parts:
-            response_text += "".join(part.text for part in event.content.parts if part.text)
-            
-    updated_session = await runner.session_service.get_session(session_id)
-    
-    return JSONResponse({
-        "response": response_text,
-        "state": updated_session.state
-    })
-
-
-@app.post("/api/scholarship/chat")
-async def chat_scholarship_api(data: dict, request: Request):
-    """API endpoint to send a message to a session and get the response."""
-    runner = request.app.state.runner
-    session_id = data.get("session_id")
-    user_msg = data.get("message")
-    user_id = "web_user"
-    
-    # If no session_id is provided, create one
-    if not session_id:
-        session = await runner.session_service.create_session(
-            user_id=user_id, 
-            app_name=request.app.state.agent_app_name
-        )
-        session_id = session.id
-        
-    message = types.Content(
-        role="user",
-        parts=[types.Part.from_text(text=user_msg)]
-    )
-    
-    response_text = ""
-    async for event in runner.run(
-        new_message=message,
-        user_id=user_id,
-        session_id=session_id,
-    ):
-        if event.content and event.content.parts:
-            response_text += "".join(part.text for part in event.content.parts if part.text)
-            
-    updated_session = await runner.session_service.get_session(session_id)
-    
-    return JSONResponse({
-        "session_id": session_id,
-        "response": response_text,
-        "state": updated_session.state
-    })
 
 
 # Main execution
@@ -283,4 +132,3 @@ if __name__ == "__main__":
     import uvicorn
 
     uvicorn.run(app, host="0.0.0.0", port=8000)
-
